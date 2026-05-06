@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>سبين وفوز</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+#app{width:100%;max-width:420px;padding:0 20px 40px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+button{cursor:pointer;border:none;font-family:inherit}
+.btn-main{padding:14px 48px;font-size:18px;font-weight:700;background:linear-gradient(135deg,#7F77DD,#378ADD);border-radius:30px;color:#fff;box-shadow:0 4px 20px rgba(127,119,221,0.5);margin-top:16px}
+.btn-next{padding:12px 40px;font-size:16px;font-weight:600;border-radius:25px;color:#fff;margin-top:20px}
+.card{background:rgba(255,255,255,0.06);border-radius:20px;padding:20px;margin-bottom:20px;width:100%}
+.option{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:14px 20px;font-size:16px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:12px;margin-bottom:12px;color:#fff;width:100%;text-align:right}
+.option.correct{background:rgba(29,158,117,0.3);border-color:#1D9E75}
+.option.wrong{background:rgba(226,75,74,0.3);border-color:#E24B4A}
+.badge{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.progress-bar{height:4px;background:rgba(255,255,255,0.1);border-radius:4px;margin-bottom:20px}
+.progress-fill{height:4px;background:linear-gradient(90deg,#7F77DD,#378ADD);border-radius:4px;transition:width .5s}
+.pill{background:rgba(255,255,255,0.08);border-radius:20px;padding:6px 16px;font-size:13px;display:inline-block;margin:4px}
+.stat-box{background:rgba(255,255,255,0.07);border-radius:20px;padding:20px 32px;width:100%;text-align:center;margin-bottom:12px}
+.history-item{background:rgba(255,255,255,0.05);border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:8px;width:100%}
+@keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+.popin{animation:popIn .5s ease}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const QUESTIONS=[
+  {q:"ما هي عاصمة مصر؟",o:["الإسكندرية","القاهرة","الأقصر","أسوان"],a:1},
+  {q:"كم عدد أيام السنة؟",o:["360","364","365","366"],a:2},
+  {q:"ما هو أكبر كوكب في المجموعة الشمسية؟",o:["زحل","المريخ","المشتري","نبتون"],a:2},
+  {q:"من رسم الموناليزا؟",o:["ميكيلانجيلو","رافائيل","ليوناردو دافينشي","بيكاسو"],a:2},
+  {q:"ما هي أسرع حيوان بري؟",o:["الأسد","الفهد","الحصان","الذئب"],a:1},
+  {q:"كم عدد دقائق الساعة؟",o:["30","60","90","120"],a:1},
+  {q:"ما عاصمة فرنسا؟",o:["برلين","مدريد","باريس","روما"],a:2},
+  {q:"كم عدد ألوان قوس قزح؟",o:["5","6","7","8"],a:2},
+  {q:"ما هو أطول نهر في العالم؟",o:["الأمازون","النيل","الكونغو","المسيسيبي"],a:1},
+  {q:"كم عدد أضلاع المثلث؟",o:["2","3","4","5"],a:1},
+];
+const PRIZES=[
+  {e:"💎",l:"جوهرة نادرة",p:500,c:"#7F77DD"},
+  {e:"🥇",l:"ميدالية ذهبية",p:300,c:"#EF9F27"},
+  {e:"🎁",l:"هدية مفاجأة",p:200,c:"#D85A30"},
+  {e:"⭐",l:"نجمة لامعة",p:150,c:"#1D9E75"},
+  {e:"🎟️",l:"تذكرة محظوظ",p:100,c:"#378ADD"},
+  {e:"🔥",l:"بونص ناري",p:250,c:"#E24B4A"},
+  {e:"🪙",l:"عملة ذهبية",p:120,c:"#BA7517"},
+  {e:"🎯",l:"إصابة مباشرة",p:180,c:"#639922"},
+];
+
+let questions=[],qIndex=0,score=0,totalPts=0,history=[],spinAngle=0;
+
+function shuffle(a){return[...a].sort(()=>Math.random()-.5);}
+function app(){return document.getElementById("app");}
+
+function showHome(){
+  app().innerHTML=`
+    <div style="text-align:center">
+      <div style="font-size:64px;margin-bottom:16px">🎰</div>
+      <h1 style="font-size:32px;font-weight:700;background:linear-gradient(90deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px">سبين وفوز</h1>
+      <p style="font-size:16px;color:#aaa;margin-bottom:24px">جاوب صح واكسب جوائز عشوائية!</p>
+      <div style="margin-bottom:24px">
+        ${["💎 جواهر","🥇 ميداليات","🔥 بونص","🎁 هدايا"].map(t=>`<span class="pill">${t}</span>`).join("")}
+      </div>
+      <button class="btn-main" onclick="startGame()">ابدأ اللعب 🚀</button>
+    </div>`;
+}
+
+function startGame(){
+  questions=shuffle(QUESTIONS).slice(0,6);
+  qIndex=0;score=0;totalPts=0;history=[];
+  showQuestion();
+}
+
+function showQuestion(){
+  const q=questions[qIndex];
+  const letters=["أ","ب","ج","د"];
+  app().innerHTML=`
+    <div style="width:100%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:13px;color:#aaa">سؤال ${qIndex+1} / ${questions.length}</div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:20px;padding:4px 14px;font-size:13px">⭐ ${totalPts} نقطة</div>
+      </div>
+      <div class="card">
+        <div class="progress-bar"><div class="progress-fill" style="width:${(qIndex/questions.length)*100}%"></div></div>
+        <p style="font-size:18px;font-weight:600;text-align:center;line-height:1.6">${q.q}</p>
+      </div>
+      <div id="options">
+        ${q.o.map((opt,i)=>`
+          <button class="option" id="opt${i}" onclick="handleAnswer(${i})">
+            <span class="badge">${letters[i]}</span>${opt}
+          </button>`).join("")}
+      </div>
+    </div>`;
+}
+
+function handleAnswer(i){
+  const q=questions[qIndex];
+  document.querySelectorAll(".option").forEach(b=>b.onclick=null);
+  document.getElementById("opt"+q.a).classList.add("correct");
+  if(i!==q.a){
+    document.getElementById("opt"+i).classList.add("wrong");
+    history.push({q:q.q,correct:false,prize:null});
+    setTimeout(nextQuestion,1200);
+  } else {
+    setTimeout(showReveal,700);
+  }
+}
+
+function showReveal(){
+  const prizeIndex=Math.floor(Math.random()*PRIZES.length);
+  const seg=360/PRIZES.length;
+  const target=5*360+prizeIndex*seg+seg/2;
+  const prize=PRIZES[prizeIndex];
+
+  app().innerHTML=`
+    <div style="text-align:center">
+      <div style="font-size:20px;font-weight:600;color:#a78bfa;margin-bottom:24px">إجابة صح! 🎉 شوف جايزتك</div>
+      <div style="position:relative;width:240px;height:240px;margin:0 auto 24px">
+        <svg id="wheel" width="240" height="240" style="transition:transform 3s cubic-bezier(0.17,0.67,0.12,1)">
+          ${PRIZES.map((p,i)=>{
+            const s=(i*seg-90)*Math.PI/180;
+            const e=((i+1)*seg-90)*Math.PI/180;
+            const x1=120+110*Math.cos(s),y1=120+110*Math.sin(s);
+            const x2=120+110*Math.cos(e),y2=120+110*Math.sin(e);
+            const mx=120+70*Math.cos((s+e)/2),my=120+70*Math.sin((s+e)/2);
+            return`<path d="M120,120 L${x1},${y1} A110,110 0 0,1 ${x2},${y2} Z" fill="${p.c}" stroke="#1a1a2e" stroke-width="2"/>
+                   <text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" font-size="18">${p.e}</text>`;
+          }).join("")}
+          <circle cx="120" cy="120" r="18" fill="#1a1a2e" stroke="#fff" stroke-width="2"/>
+        </svg>
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:28px">▼</div>
+      </div>
+      <div id="prize-reveal" style="display:none" class="popin">
+        <div style="font-size:64px;margin-bottom:8px">${prize.e}</div>
+        <div style="font-size:24px;font-weight:700;color:${prize.c}">${prize.l}</div>
+        <div style="font-size:16px;color:#aaa;margin-top:4px">+ ${prize.p} نقطة</div>
+        <button class="btn-next" style="background:linear-gradient(135deg,${prize.c},#302b63)" onclick="afterReveal(${prizeIndex})">
+          ${qIndex+1>=questions.length?"شوف نتيجتك 🏆":"السؤال الجاي ➡️"}
+        </button>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    document.getElementById("wheel").style.transform=`rotate(${target}deg)`;
+  },100);
+
+  setTimeout(()=>{
+    document.getElementById("prize-reveal").style.display="block";
+    totalPts+=prize.p;
+    score++;
+    history.push({q:questions[qIndex].q,correct:true,prize});
+  },3200);
+}
+
+function afterReveal(prizeIndex){
+  nextQuestion();
+}
+
+function nextQuestion(){
+  if(qIndex+1>=questions.length){showResult();}
+  else{qIndex++;showQuestion();}
+}
+
+function showResult(){
+  const medal=score>=5?"🏆":score>=3?"🥈":"🎮";
+  app().innerHTML=`
+    <div style="width:100%;text-align:center">
+      <div style="font-size:56px;margin-bottom:12px">${medal}</div>
+      <h2 style="font-size:28px;font-weight:700;margin-bottom:20px">النتيجة النهائية</h2>
+      <div class="stat-box">
+        <div style="font-size:14px;color:#aaa">إجاباتك الصح</div>
+        <div style="font-size:40px;font-weight:700;color:#1D9E75">${score} / ${questions.length}</div>
+        <div style="font-size:14px;color:#aaa;margin-top:8px">مجموع النقاط</div>
+        <div style="font-size:32px;font-weight:700;color:#a78bfa">${totalPts} ⭐</div>
+      </div>
+      ${history.map(h=>`
+        <div class="history-item">
+          <span style="color:#ccc;max-width:65%;text-align:right">${h.q}</span>
+          <span>${h.correct?h.prize.e+" +"+h.prize.p:"❌"}</span>
+        </div>`).join("")}
+      <button class="btn-main" onclick="startGame()">العب تاني 🔄</button>
+    </div>`;
+}
+
+showHome();
+</script>
+</body>
+</html>
